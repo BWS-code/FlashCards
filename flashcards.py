@@ -2,14 +2,15 @@ import json
 import os
 import random
 import sys
+from logger import LoggerIn, LoggerOut, log_methods, my_log
 from setup import *
 
 
 class Flashcards:
-    def __init__(self, cards, template, from_log_method):
+    def __init__(self, cards, template, log_method):
         self.cards = cards
         self.template = template
-        self.log_file = from_log_method
+        self.log_file = log_method
 
     def quiz(self):
         print('How many times to ask?')
@@ -33,8 +34,6 @@ class Flashcards:
 
     def menu(self):
         while 555 < 666:
-            if args.import_from:
-                Card('import').apply_action()
             print('Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):')
             inp = input()
             if inp != 'ask':
@@ -45,8 +44,6 @@ class Flashcards:
             else:
                 self.quiz()
         print('bye bye')
-        if args.export_to:
-            Card('export').apply_action()
         try:
             os.remove(log_methods[1])
         except:
@@ -67,7 +64,6 @@ class Card(Flashcards):
             self.user_manager = User(self.mode, k_or_v)
             entry = self.user_manager.get_input()
             new_card.append(entry)
-
         self.cards |= {new_card[0]: [new_card[1], err]}
         print(f'The pair ("{new_card[0]}":"{new_card[1]}") has been added.')
 
@@ -81,24 +77,20 @@ class Card(Flashcards):
             print('Nothing to remove')
 
     def load(self):
-        entry = args.import_from or self.user_manager.get_input()
+        entry = self.user_manager.get_input()
         if entry:
             with open(entry, 'r') as file:
                 imported_cards = json.loads(file.read())
                 self.cards |= imported_cards
-            if len(list(imported_cards)) == 1:
-                print(f'{len(imported_cards)} card has been loaded.')
-            else:
-                print(f'{len(imported_cards)} cards have been loaded.')
+            print(f'{len(imported_cards)} card{"s"[:len(imported_cards) ^ 1]} '
+                  f'ha{"s" if len(imported_cards) == 1 else "ve"} been loaded.')
 
     def export(self):
-        entry = args.export_to or self.user_manager.get_input()
+        entry = self.user_manager.get_input()
         with open(entry, 'w') as file:
             file.write(json.dumps(self.cards, indent=4))
-        if len(self.cards) == 1:
-            print(f'{len(self.cards)} card have been saved')
-        else:
-            print(f'{len(self.cards)} cards have been saved')
+        print(f'{len(self.cards)} card{"s"[:len(self.cards) ^ 1]} '
+              f'ha{"s" if len(self.cards) == 1 else "ve"} been saved.')
 
     def log(self):
         user_log = self.user_manager.get_input()
@@ -114,12 +106,10 @@ class Card(Flashcards):
 
     def hardest(self):
         if self.cards and max(self.errs) > 0:
-            if len(self.hard) == 1:
-                print(f'The hardest card is {", ".join(self.hard)}. '
-                      f'You have {max(self.errs)} errors answering it.')
-            else:
-                print(f'The hardest cards are {", ".join(self.hard)}. '
-                      f'You have {max(self.errs)} errors answering them.')
+            print(f'The hardest card{"s"[:len(self.hard)^1]} {"is" if len(self.hard) == 1 else "are"} '
+                  f'{", ".join(self.hard)}. '
+                  f'You have {max(self.errs)} error{"s"[:max(self.errs)^1]} answering '
+                  f'{"it" if len(self.hard) == 1 else "them"}.')
         else:
             print('There are no cards with errors.')
 
@@ -187,45 +177,6 @@ class User(Flashcards):
                 return file_name
             else:
                 print('File not found.')
-
-
-class LoggerOut:
-    def __init__(self, filename, hidden=False):
-        self.terminal = sys.stdout
-        self.filename = filename
-        self.hidden = hidden
-
-    def write(self, message):
-        self.terminal.write(message)  # standard output to console
-        if my_log == log_methods[0]:  # logging to StringIO object
-            self.filename.write(message)
-        else:  # logging straight to default file
-            with open(self.filename, "a") as file:
-                print(message, file=file, flush=True, end='')
-            if not self.hidden:
-                self.hide_default()  # hide default log file
-
-    def hide_default(self):
-        os.system(f'attrib +h {log_methods[1]}')
-        self.hidden = True
-
-    def flush(self):
-        pass
-
-
-class LoggerIn:
-    def __init__(self, filename):
-        self.terminal = sys.stdin
-        self.filename = filename
-
-    def readline(self):
-        entry = self.terminal.readline()
-        if my_log == log_methods[0]:
-            self.filename.write(entry)
-        else:
-            with open(self.filename, "a") as file:
-                print(entry.rstrip(), file=file, flush=True)
-        return entry
 
 
 sys.stdout = LoggerOut(my_log)
