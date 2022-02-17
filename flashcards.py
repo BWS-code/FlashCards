@@ -34,6 +34,8 @@ class Flashcards:
 
     def menu(self):
         while 555 < 666:
+            if args.import_from:
+                Card('import').apply_action()
             print('Input the action (add, remove, import, export, ask, exit, log, hardest card, reset stats):')
             inp = input()
             if inp != 'ask':
@@ -44,6 +46,8 @@ class Flashcards:
             else:
                 self.quiz()
         print('bye bye')
+        if args.export_to:
+            Card('export').apply_action()
         try:
             os.remove(log_methods[1])
         except:
@@ -77,7 +81,7 @@ class Card(Flashcards):
             print('Nothing to remove')
 
     def load(self):
-        entry = self.user_manager.get_input()
+        entry = args.import_from or self.user_manager.get_input()
         if entry:
             with open(entry, 'r') as file:
                 imported_cards = json.loads(file.read())
@@ -86,7 +90,7 @@ class Card(Flashcards):
                   f'ha{"s" if len(imported_cards) == 1 else "ve"} been loaded.')
 
     def export(self):
-        entry = self.user_manager.get_input()
+        entry = args.export_to or self.user_manager.get_input()
         with open(entry, 'w') as file:
             file.write(json.dumps(self.cards, indent=4))
         print(f'{len(self.cards)} card{"s"[:len(self.cards) ^ 1]} '
